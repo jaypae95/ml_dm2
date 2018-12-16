@@ -45,7 +45,7 @@ class Linear(Layer):
         # TODO: Linear 레이어의 forward propagation 구현.
         ######################################################################
         self.x_ = x
-        out = np.dot(self.x_, self.params["w"]) + self.params["b"]
+        out = np.dot(x, self.params["w"]) + self.params["b"]
         ######################################################################
         #                          END OF YOUR CODE                          #
         ######################################################################
@@ -84,11 +84,12 @@ class ReLU(Layer):
         # TODO: ReLU 레이어의 forward propagation 구현.
         ######################################################################
         self.x_ = x
+        out = x.copy()
         # out = x.copy()
         # for i, r in enumerate(x):
         #     for j, value in enumerate(r):
         #         out[i][j] = max(0, value)
-        out = np.maximum(0, x)
+        out = np.maximum(0, out)
         ######################################################################
         #                          END OF YOUR CODE                          #
         ######################################################################
@@ -98,7 +99,7 @@ class ReLU(Layer):
         ######################################################################
         # TODO: ReLU 레이어의 backward propagation 구현.
         ######################################################################
-        x = self.x_
+        x = self.x_.copy()
         neg = (x <= 0)
         dout[neg] = 0
         dx = dout
@@ -117,7 +118,7 @@ class Sigmoid(Layer):
         ######################################################################
         # TODO: Sigmoid 레이어의 forward propagation 구현.
         ######################################################################
-        self.x_ = x
+        self.x_ = x.copy()
         out = 1 / (1+np.exp(-x))
         self.params["out"] = out
         ######################################################################
@@ -145,7 +146,7 @@ class Tanh(Layer):
         ######################################################################
         # TODO: Tanh 레이어의 forward propagation 구현.
         ######################################################################
-        self.x_ = x
+        self.x_ = x.copy()
         out = (np.exp(x)-np.exp(-x))/(np.exp(x)+np.exp(-x))
         self.params["out"] = out
         ######################################################################
@@ -190,7 +191,7 @@ class SoftmaxCELoss(Layer):
         ######################################################################
         y_pred = []
         for i in range(len(y)):
-            y_pred.append(np.exp(x[i]) / np.sum(np.exp(x[i]), axis=0))
+            y_pred.append(np.exp(x[i]) / np.sum(np.exp(x[i])))
         y_pred = np.array(y_pred)
         y_log = []
         for i in range(len(y)):
@@ -243,7 +244,8 @@ class Conv2d(Layer):
         #
         # HINT: for-loop의 4-중첩으로 구현.
         ######################################################################
-        self.x_ = x
+        self.x_ = x.copy()
+        
         strd = self.stride
 
         x_pad = np.pad(x,((0,),(0,), (self.pad,), (self.pad,)), 'constant')
@@ -279,7 +281,7 @@ class Conv2d(Layer):
         #
         # HINT: for-loop의 4-중첩으로 구현.
         ######################################################################
-        x = self.x_
+        x = self.x_.copy()
         strd = self.stride
 
         x_pad = np.pad(x,((0,),(0,), (self.pad,), (self.pad,)), 'constant')
@@ -328,7 +330,7 @@ class MaxPool2d(Layer):
         #
         # HINT: for-loop의 2-중첩으로 구현.
         ######################################################################
-        self.x_ = x
+        self.x_ = x.copy()
         strd = self.stride
         ksize = self.ksize
         N, H, R, C = x.shape
@@ -347,7 +349,7 @@ class MaxPool2d(Layer):
         #
         # HINT: for-loop의 4-중첩으로 구현.
         ######################################################################
-        x = self.x_
+        x = self.x_.copy()
         strd = self.stride
         ksize = self.ksize
         N, H, R, C = x.shape

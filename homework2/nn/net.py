@@ -118,15 +118,18 @@ class FCNet:
         #
         # HINT: 임의의 레이어를 처리하기 위해 for loop를 사용해야 함.
         ######################################################################
-        mod = "Linear"
+        mod_linear = "Linear"
+        mod_relu = "ReLU"
         for i in range(self.num_layers):
             if i == 0:
-                self.modules[mod+str(i+1)] = Linear(input_dim, hidden_dims[i])
+                self.modules[mod_linear+str(i+1)] = Linear(input_dim, hidden_dims[i], init_mode, init_scale)
+                self.modules[mod_relu+str(i+1)] = ReLU()
             elif i == self.num_layers-1:
-                self.modules[mod+str(i+1)] = Linear(hidden_dims[i-1], num_classes)
+                self.modules[mod_linear+str(i+1)] = Linear(hidden_dims[i-1], num_classes, init_mode, init_scale)
+                self.modules["Softmax1"] = SoftmaxCELoss()
             else:
-                self.modules[mod+str(i+1)] = Linear(hidden_dims[i-1], hidden_dims[i])
-        self.modules["Softmax1"] = SoftmaxCELoss()
+                self.modules[mod_linear+str(i+1)] = Linear(hidden_dims[i-1], hidden_dims[i], init_mode, init_scale)
+                self.modules[mod_relu+str(i+1)] = ReLU()
         ######################################################################
         #                          END OF YOUR CODE                          #
         ######################################################################
@@ -214,15 +217,19 @@ class ThreeLayerConvNet:
         # NOTE: 모든 레이어는 self.modules에 적절한 이름을 (e.g. "conv1")
         # key값으로 사용하여 저장되어야 함.
         ######################################################################
-        HX, RX, CX = input_dim
-        RO = int((RX+2*pad-ksize)/stride + 1)
-        RO = int((RO-2)/stride+1)
-        self.modules["Conv1"] = Conv2d(input_dim[0], num_filters, ksize, stride, pad)
+        C, H, W = input_dim
+
+        OH = int((H+2*pad-ksize)/stride + 1)
+        OH = int((OH-2)/2+1)
+        OW = int((W+2*pad-ksize)/stride+1)
+        OW = int((OW-2)/2+1)
+
+        self.modules["Conv1"] = Conv2d(input_dim[0], num_filters, ksize, stride, pad, init_mode, init_scale)
         self.modules["Relu1"] = ReLU()
-        self.modules["Pool1"] = MaxPool2d(2, stride)
-        self.modules["Linear1"] = Linear(num_filters*RO*RO,hidden_dim)
+        self.modules["Pool1"] = MaxPool2d(2, 2)
+        self.modules["Linear1"] = Linear(num_filters*OH*OW,hidden_dim, init_mode, init_scale)
         self.modules["Relu2"] = ReLU()
-        self.modules["Linear2"] = Linear(hidden_dim ,num_classes)
+        self.modules["Linear2"] = Linear(hidden_dim ,num_classes, init_mode, init_scale)
         self.modules["Softmax1"] = SoftmaxCELoss()
         ######################################################################
         #                          END OF YOUR CODE                          #
@@ -247,17 +254,16 @@ class ThreeLayerConvNet:
         # HINT: Linear forward 의 입력을 위해 feature를  flatten 시켜야 함.
         # e.g. (N, C, H, W) -> (N, C*H*W)
         ######################################################################
-
-        out = self.modules["Conv1"].forward(X)
-        out = self.modules["Relu1"].forward(out)
-        out = self.modules["Pool1"].forward(out)
-        N, C, H, W = out.shape
-        out = out.reshape((N, C*H*W))
-        out = self.modules["Linear1"].forward(out)
-        out = self.modules["Relu2"].forward(out)
-        out = self.modules["Linear2"].forward(out)
-
-        scores = out
+        for key, value in self.modules.items():
+            if key == "Softmax1":
+                continue
+            if key == "Linear1":
+                N, C, H, W = X.shape
+                X = X.reshape((N, C*H*W))
+            
+            X = value.forward(X)
+        
+        scores = X
         ######################################################################
         #                          END OF YOUR CODE                          #
         ######################################################################
@@ -276,7 +282,7 @@ class ThreeLayerConvNet:
         layers = list(self.modules.items())
         layers.reverse()
         for layer in layers:
-            if  layer[0] == "Softmax1":
+            if layer[0] == "Softmax1":
                 continue
             if layer[0] == "Pool1":
                 dx = np.reshape(dx, (N, C, H, W))
